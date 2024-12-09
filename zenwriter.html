@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mtype</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <style>
+        :root {
+            --bg-color: #f2f2f2;
+            --text-color: #1d1d1f;
+            --toolbar-bg: #f5f5f7;
+            --toolbar-color: #86868b;
+            --accent-color: #8e8e93;
+            --hover-color: #e8e8e8;
+            --border-color: #d2d2d7;
+            --active-color: #c7c7cc;
+            --cursor-color: #ff0000;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1d1d1f;
+            --text-color: #f2f2f2;
+            --toolbar-bg: #2c2c2e;
+            --toolbar-color: #86868b;
+            --accent-color: #636366;
+            --hover-color: #3a3a3c;
+            --border-color: #424245;
+            --active-color: #48484a;
+            --cursor-color: #00ff00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 0.5rem 1rem;
+        }
+
+        .toolbar button {
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .toolbar button:hover {
+            color: var(--text-color);
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+        }
+
+        .document-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            width: 100%;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .editor {
+        flex: 1;
+        font-size: 1.2rem;
+        line-height: 1.6;
+        border: none;
+        resize: none;
+        background: none;
+        color: var(--text-color);
+        font-family: 'Roboto Mono', monospace;
+        caret-color: var(--cursor-color);
+        caret-width: 5px;  /* Cursor más grueso */
+    }
+
+    
+
+    .word-counter {
+        position: fixed;
+        bottom: 5rem;
+        right: 1rem;
+        font-size: 0.8rem;
+        color: var(--toolbar-color);
+        background: var(--bg-color);
+        padding: 0.5rem 1rem;
+        opacity: 0.7;
+        z-index: 1000;
+    }
+
+        .editor:focus, .document-title:focus {
+            outline: none;
+        }
+
+        .menu-panel {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+            background-color: var(--toolbar-bg);
+            padding: 1rem;
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .menu-panel.active {
+            transform: translateX(0);
+        }
+
+        .menu-panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .documents-list {
+            list-style: none;
+            margin-bottom: 4rem;
+        }
+
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        .document-item:hover {
+            background-color: var(--hover-color);
+        }
+
+        .document-item.active {
+            background-color: var(--active-color);
+            color: var(--text-color);
+            font-weight: 300;
+        }
+
+        .document-item button {
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .document-item button:hover {
+            color: var(--text-color);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            left: 1rem;
+            bottom: 1rem;
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .patreon-button {
+            position: fixed;
+            left: 1.2rem;
+            bottom: 4rem;  /* Posicionado encima del theme-toggle */
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+            text-decoration: none;
+        }
+
+        .patreon-button:hover {
+            color: #ff0000;
+        }
+
+        .welcome-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--bg-color);
+            border: 2px solid var(--border-color);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            z-index: 1001;
+        }
+
+        .welcome-message h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-message p, .welcome-message ul {
+            margin-bottom: 1rem;
+        }
+
+        .welcome-message button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .welcome-message button:hover {
+            background-color: var(--text-color);
+        }
+
+        .format-menu {
+            position: absolute;
+            background-color: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            display: none;
+        }
+
+        .format-menu button {
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            transition: color 0.2s;
+            font-weight: normal;
+            font-style: light;
+        }
+
+        .format-menu button:hover {
+            color: var(--text-color);
+        }
+
+        #newDocument {
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 2rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+            position: fixed;
+            bottom: 1rem;
+            left: 5rem;
+            
+        }
+
+        #newDocument:hover {
+            color: var(--text-color);
+        }
+
+        @media (max-width: 600px) {
+            .editor-container {
+                padding: 1rem;
+            }
+
+            .document-title {
+                font-size: 1.5rem;
+            }
+
+            .editor {
+                font-size: 1rem;
+            }
+        }
+
+        .document-item span {
+            font-weight: 300;
+            font-style: normal;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .document-item.active span {
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        @media (max-width: 768px) {
+            .word-counter {
+                bottom: 4rem;
+                right: 0.5rem;
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+
+        .share-button {
+            position: fixed;
+            left: 1.2rem;
+            bottom: 7rem;
+            background: none;
+            border: none;
+            color: var(--toolbar-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .share-button:hover {
+            color: var(--text-color);
+        }
+
+        .share-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+            z-index: 1002;
+        }
+
+        .share-popup.active {
+            display: block;
+        }
+
+        .share-popup p {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            font-style: normal;
+            font-weight: 300;
+        }
+
+        .share-popup .buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .share-popup button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            transition: opacity 0.2s;
+        }
+
+        .share-popup button:hover {
+            opacity: 0.8;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <button id="menuToggle" title="Menú" aria-label="Abrir menú">≡</button>
+        </div>
+
+        <div class="editor-container">
+            <input type="text" class="document-title" id="documentTitle" placeholder="Título del documento" aria-label="Título del documento">
+    <div class="editor" id="editor" contenteditable="true" placeholder="Empieza a escribir..." aria-label="Contenido del documento"></div>
+    <div class="word-counter" id="wordCounter">0 palabras | 0 caracteres</div>
+    <div class="format-menu" id="formatMenu">
+                <button id="boldButton" title="Negrita"><B>B</button>
+                <button id="italicButton" title="Cursiva"><I>I</button>
+                <button id="underlineButton" title="Subrayado">U</button>
+                <button id="strikethroughButton" title="Tachado"><S>S</button>
+            </div>
+        </div>
+
+        <div class="menu-panel" id="menuPanel">
+            <ul class="documents-list" id="documentsList"></ul>
+            <button id="newDocument" title="Nuevo documento">+</button>
+        </div>
+
+        <button class="share-button" id="shareButton" title="Compartir Mtype" aria-label="Compartir Mtype">⇱</button>
+        <div class="overlay" id="shareOverlay"></div>
+        <div class="share-popup" id="sharePopup">
+            <p>Un lugar para escribir con claridad. Sin ruido, solo tú y tu creatividad.</p>
+            <div class="buttons">
+                <button id="copyShareLink">Copiar</button>
+            </div>
+        </div>
+        <a href="https://www.patreon.com/tuusuario" target="_blank" class="patreon-button" title="Apoyar en Patreon" aria-label="Apoyar en Patreon">♥︎</a>
+        <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+    </div>
+
+    <div class="welcome-message" id="welcomeMessage">
+        <h1>Bienvenido a Mtype</h1>
+        <p>Mtype es un editor de texto minimalista que te permite escribir sin distracciones.</p>
+        <p>Características principales:</p>
+        <ul>
+            <li>Soporte para Markdown</li>
+            <li>Múltiples documentos</li>
+            <li>Tema claro/oscuro</li>
+            <li>Guardado automático</li>
+            <li>Formato de texto con atajos de teclado</li>
+        </ul>
+        <p>Para comenzar, simplemente empieza a escribir o crea un nuevo documento.</p>
+        <button id="closeWelcome">Comenzar a escribir</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+
+        const translations = {
+            es: {
+                title: 'Mtype',
+                placeholder: 'Empieza a escribir...',
+                titlePlaceholder: 'Título del documento',
+                wordCount: 'palabras',
+                charCount: 'caracteres',
+                welcome: {
+                    title: 'Bienvenido a Mtype',
+                    description: 'Mtype es un editor de texto minimalista que te permite escribir sin distracciones.',
+                    features: 'Características principales:',
+                    featuresList: [
+                        'Soporte para Markdown',
+                        'Múltiples documentos',
+                        'Tema claro/oscuro',
+                        'Guardado automático',
+                        'Formato de texto con atajos de teclado'
+                    ],
+                    startMessage: 'Para comenzar, simplemente empieza a escribir o crea un nuevo documento.',
+                    startButton: 'Comenzar a escribir'
+                },
+                share: {
+                    message: 'Un lugar para escribir con claridad. Sin ruido, solo tú y tu creatividad.',
+                    copyButton: 'Copiar',
+                    copied: '¡Copiado!',
+                    thanks: 'Gracias por apoyar Mtype y la escritura sin distracciones.'
+                },
+                buttons: {
+                    menu: 'Menú',
+                    theme: 'Cambiar tema',
+                    share: 'Compartir Mtype',
+                    support: 'Apoyar en Patreon',
+                    newDoc: 'Nuevo documento'
+                }
+            },
+            en: {
+                title: 'Mtype',
+                placeholder: 'Start writing...',
+                titlePlaceholder: 'Document title',
+                wordCount: 'words',
+                charCount: 'characters',
+                welcome: {
+                    title: 'Welcome to Mtype',
+                    description: 'Mtype is a minimalist text editor that lets you write without distractions.',
+                    features: 'Main features:',
+                    featuresList: [
+                        'Markdown support',
+                        'Multiple documents',
+                        'Light/dark theme',
+                        'Auto-save',
+                        'Keyboard shortcuts for formatting'
+                    ],
+                    startMessage: 'To begin, simply start writing or create a new document.',
+                    startButton: 'Start writing'
+                },
+                share: {
+                    message: 'A place to write with clarity. No noise, just you and your creativity.',
+                    copyButton: 'Copy',
+                    copied: 'Copied!',
+                    thanks: 'Thank you for supporting Mtype and distraction-free writing.'
+                },
+                buttons: {
+                    menu: 'Menu',
+                    theme: 'Toggle theme',
+                    share: 'Share Mtype',
+                    support: 'Support on Patreon',
+                    newDoc: 'New document'
+                }
+            }
+        };
+
+        function getPreferredLanguage() {
+            const savedLang = localStorage.getItem('mtype-language');
+            if (savedLang) return savedLang;
+            
+            const browserLang = navigator.language.split('-')[0];
+            return translations[browserLang] ? browserLang : 'en';
+        }
+
+        function updateUILanguage(lang) {
+            const t = translations[lang];
+            
+            editor.setAttribute('placeholder', t.placeholder);
+            documentTitle.setAttribute('placeholder', t.titlePlaceholder);
+            
+            document.getElementById('menuToggle').title = t.buttons.menu;
+            document.getElementById('themeToggle').title = t.buttons.theme;
+            document.getElementById('shareButton').title = t.buttons.share;
+            document.getElementById('newDocument').title = t.buttons.newDoc;
+            
+            const sharePopup = document.getElementById('sharePopup');
+            sharePopup.querySelector('p').textContent = t.share.message;
+            document.getElementById('copyShareLink').textContent = t.share.copyButton;
+            
+            updateWordCount();
+        }
+
+        function updateWordCount() {
+            const text = editor.innerText || '';
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const charCount = text.length;
+            const t = translations[getPreferredLanguage()];
+            document.getElementById('wordCounter').textContent = 
+                `${wordCount} ${t.wordCount} | ${charCount} ${t.charCount}`;
+        }
+
+        marked.setOptions({
+            headerIds: false,
+            mangle: false
+        });
+
+        let currentDocument = {
+            id: null,
+            title: '',
+            content: ''
+        };
+        let documents = [];
+
+        const editor = document.getElementById('editor');
+        const documentTitle = document.getElementById('documentTitle');
+        const menuPanel = document.getElementById('menuPanel');
+        const documentsList = document.getElementById('documentsList');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const formatMenu = document.getElementById('formatMenu');
+        const menuToggle = document.getElementById('menuToggle');
+
+        function loadDocuments() {
+            const savedDocuments = localStorage.getItem('zenwrite-documents');
+            if (savedDocuments) {
+                documents = JSON.parse(savedDocuments);
+                renderDocumentsList();
+            }
+        }
+
+        function saveDocuments() {
+            localStorage.setItem('zenwrite-documents', JSON.stringify(documents));
+        }
+
+        function renderDocumentsList() {
+            documentsList.innerHTML = '';
+            documents.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = `document-item ${doc.id === currentDocument.id ? 'active' : ''}`;
+                li.innerHTML = `
+                    <span>${doc.title || 'Sin título'}</span>
+                    <button class="delete-doc" data-id="${doc.id}" aria-label="Eliminar documento">✕</button>
+                `;
+                li.onclick = (e) => {
+                    if (!e.target.classList.contains('delete-doc')) {
+                        loadDocument(doc.id);
+                    }
+                };
+                li.querySelector('.delete-doc').onclick = (e) => {
+                    e.stopPropagation();
+                    deleteDocument(doc.id);
+                };
+                documentsList.appendChild(li);
+            });
+        }
+
+        function loadDocument(id) {
+            const doc = documents.find(d => d.id === id);
+            if (doc) {
+                currentDocument = { ...doc };
+                documentTitle.value = doc.title;
+                editor.innerHTML = doc.content;
+                updateWordCount();
+                renderDocumentsList();
+            }
+            menuPanel.classList.remove('active');
+        }
+
+        function createNewDocument() {
+            const newDoc = {
+                id: Date.now(),
+                title: '',
+                content: ''
+            };
+            documents.push(newDoc);
+            currentDocument = { ...newDoc };
+            documentTitle.value = '';
+            editor.innerHTML = '';
+            renderDocumentsList();
+            saveDocuments();
+            menuPanel.classList.remove('active');
+        }
+
+        function saveCurrentDocument() {
+            if (currentDocument.id) {
+                const index = documents.findIndex(d => d.id === currentDocument.id);
+                if (index !== -1) {
+                    documents[index] = { ...currentDocument };
+                } else {
+                    documents.push({ ...currentDocument });
+                }
+                saveDocuments();
+                renderDocumentsList();
+            }
+        }
+
+        function deleteDocument(id) {
+            documents = documents.filter(d => d.id !== id);
+            if (currentDocument.id === id) {
+                if (documents.length > 0) {
+                    loadDocument(documents[0].id);
+                } else {
+                    createNewDocument();
+                }
+            }
+            saveDocuments();
+            renderDocumentsList();
+        }
+
+        function showFormatMenu(x, y) {
+            formatMenu.style.display = 'block';
+            formatMenu.style.left = `${x}px`;
+            formatMenu.style.top = `${y}px`;
+
+            document.getElementById('boldButton').style.fontWeight = document.queryCommandState('bold') ? 'bold' : 'normal';
+            document.getElementById('italicButton').style.fontStyle = document.queryCommandState('italic') ? 'italic' : 'normal';
+            document.getElementById('underlineButton').style.textDecoration = document.queryCommandState('underline') ? 'underline' : 'none';
+            document.getElementById('strikethroughButton').style.textDecoration = document.queryCommandState('strikeThrough') ? 'line-through' : 'none';
+        }
+
+        function hideFormatMenu() {
+            formatMenu.style.display = 'none';
+        }
+
+        function applyFormat(command) {
+            document.execCommand(command, false, null);
+            currentDocument.content = editor.innerHTML;
+            saveCurrentDocument();
+            showFormatMenu(formatMenu.offsetLeft, formatMenu.offsetTop);
+        }
+
+        menuToggle.addEventListener('click', () => {
+            menuPanel.classList.toggle('active');
+        });
+
+        document.getElementById('newDocument').addEventListener('click', createNewDocument);
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.setAttribute('data-theme',
+                document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+            );
+            localStorage.setItem('zenwrite-theme', document.documentElement.getAttribute('data-theme'));
+        });
+
+        editor.addEventListener('input', () => {
+            currentDocument.content = editor.innerHTML;
+            saveCurrentDocument();
+        });
+
+        documentTitle.addEventListener('input', () => {
+            currentDocument.title = documentTitle.value;
+            saveCurrentDocument();
+        });
+
+        document.getElementById('closeWelcome').addEventListener('click', () => {
+            welcomeMessage.style.display = 'none';
+        });
+
+        editor.addEventListener('mouseup', (e) => {
+            if (window.getSelection().toString().length > 0) {
+                const range = window.getSelection().getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                showFormatMenu(rect.left, rect.bottom + window.scrollY);
+            } else {
+                hideFormatMenu();
+            }
+        });
+
+        editor.addEventListener('keyup', () => {
+            if (window.getSelection().toString().length === 0) {
+                hideFormatMenu();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!formatMenu.contains(e.target) && !editor.contains(e.target)) {
+                hideFormatMenu();
+            }
+            if (!menuPanel.contains(e.target) && !menuToggle.contains(e.target)) {
+                menuPanel.classList.remove('active');
+            }
+        });
+
+        document.getElementById('boldButton').addEventListener('click', () => applyFormat('bold'));
+        document.getElementById('italicButton').addEventListener('click', () => applyFormat('italic'));
+        document.getElementById('underlineButton').addEventListener('click', () => applyFormat('underline'));
+        document.getElementById('strikethroughButton').addEventListener('click', () => applyFormat('strikeThrough'));
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const currentLine = range.startContainer.textContent;
+                
+                if (currentLine.trim().startsWith('-') || currentLine.trim().startsWith('*')) {
+                    e.preventDefault();
+                    
+                    if (currentLine.trim() === '-' || currentLine.trim() === '*') {
+                        document.execCommand('insertHTML', false, '<br>');
+                        return;
+                    }
+                    
+                    const marker = currentLine.trim().startsWith('-') ? '- ' : '* ';
+                    
+                    document.execCommand('insertHTML', false, '<br>' + marker);
+                }
+            }
+            
+            if (e.key === ' ') {
+                const text = editor.innerText;
+                const lines = text.split('\n');
+                const currentLine = lines[lines.length - 1];
+                
+                if (currentLine === '-' || currentLine === '*') {
+                    e.preventDefault();
+                    const marker = currentLine === '-' ? '- ' : '* ';
+                    const range = window.getSelection().getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(document.createTextNode(marker));
+                }
+            }
+
+            if (e.metaKey || e.ctrlKey) {
+                switch (e.key.toLowerCase()) {
+                    case 'b':
+                        e.preventDefault();
+                        applyFormat('bold');
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        applyFormat('italic');
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        applyFormat('underline');
+                        break;
+                }
+            }
+        });
+
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData('text/plain');
+            const lines = text.split('\n');
+            const formattedText = lines.map(line => {
+                if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
+                    return line;
+                }
+                return line;
+            }).join('\n');
+            document.execCommand('insertText', false, formattedText);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('zenwrite-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            loadDocuments();
+
+            if (documents.length === 0) {
+                createNewDocument();
+            } else {
+                loadDocument(documents[0].id);
+            }
+
+            if (!localStorage.getItem('zenwrite-welcomed')) {
+                welcomeMessage.style.display = 'block';
+                localStorage.setItem('zenwrite-welcomed', 'true');
+            } else {
+                welcomeMessage.style.display = 'none';
+            }
+
+            const lang = getPreferredLanguage();
+            updateUILanguage(lang);
+        });
+
+        editor.addEventListener('input', updateWordCount);
+
+        documentTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                editor.focus();
+            }
+        });
+
+        document.getElementById('shareButton').addEventListener('click', () => {
+            document.getElementById('shareOverlay').classList.add('active');
+            document.getElementById('sharePopup').classList.add('active');
+        });
+
+        document.getElementById('copyShareLink').addEventListener('click', () => {
+            const t = translations[getPreferredLanguage()];
+            const shareText = t.share.message + '\n' + window.location.href;
+            
+            navigator.clipboard.writeText(shareText).then(() => {
+                const copyButton = document.getElementById('copyShareLink');
+                copyButton.textContent = t.share.copied;
+                
+                const popupMessage = document.getElementById('sharePopup').querySelector('p');
+                popupMessage.textContent = t.share.thanks;
+                
+                setTimeout(() => {
+                    document.getElementById('shareOverlay').classList.remove('active');
+                    document.getElementById('sharePopup').classList.remove('active');
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = t.share.copyButton;
+                        popupMessage.textContent = t.share.message;
+                    }, 200);
+                }, 2000);
+            });
+        });
+
+        document.getElementById('closeSharePopup').addEventListener('click', () => {
+            document.getElementById('shareOverlay').classList.remove('active');
+            document.getElementById('sharePopup').classList.remove('active');
+        });
+
+        document.getElementById('shareOverlay').addEventListener('click', () => {
+            document.getElementById('shareOverlay').classList.remove('active');
+            document.getElementById('sharePopup').classList.remove('active');
+        });
+    </script>
+</body>
+</html>
